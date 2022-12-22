@@ -91,8 +91,8 @@ class Game {
     }
     void printBoard() {
         System.out.print(" ");
-        for (int i = 0; i < 10; i++) {
-            System.out.print(" " + i+1);
+        for (int i = 1; i < 11; i++) {
+            System.out.print(" " + i);
         }
         System.out.println();
 
@@ -107,9 +107,9 @@ class Game {
     }
 
     Position readPosition() throws WrongLocationException {
-        Scanner scanner = new Scanner(System.in);
-        String start = scanner.next();
-        String stop = scanner.next();
+        Scanner sc = new Scanner(System.in);
+        String start = sc.next();
+        String stop = sc.next();
         return new Position(start, stop);
     }
 
@@ -122,12 +122,122 @@ class Game {
             return false;
         }
     }
+
+    private boolean areCollisions(Position position, int size) {
+        int start_x = position.start.x;
+        int start_y = position.start.y;
+        int stop_x = position.stop.x;
+        int stop_y = position.stop.y;
+
+        assert start_x == stop_x || start_y == stop_y;
+        assert stop_x - start_x + 1 == size || stop_y - start_y + 1 == size;
+
+        if (start_x == stop_x) {
+            for (int y = start_y; y != stop_y + 1; y++) {
+                if (areNeighbors(start_x, y)) {
+                    return false;
+                }
+            }
+        } else {
+            for (int x = start_x; x != stop_x + 1; x++) {
+                if (areNeighbors(x, start_y)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+
+    private boolean areNeighbors(int x, int y) {
+        Shift[] shifts = {
+                new Shift(-1, 1),
+                new Shift(0, 1),
+                new Shift(1, 1),
+                new Shift(1, 0),
+                new Shift(1, -1),
+                new Shift(0, -1),
+                new Shift(-1, -1),
+                new Shift(-1, 0)
+        };
+
+        for (Shift shift : shifts) {
+            try {
+                if (!board[y + shift.y][x + shift.x].equals("~")) {
+                    return true;
+                }
+            } catch (ArrayIndexOutOfBoundsException ignored) {}
+        }
+
+        return false;
+    }
+
+    void placeShip(int size) throws WrongLocationException, TooCloseException, WrongLengthException {
+        Position position = readPosition();
+
+        if (!isValidSize(position, size)) {
+            throw new WrongLengthException();
+        }
+
+        if (!areCollisions(position, size)) {
+            throw new TooCloseException();
+        }
+
+        int start_x = position.start.x;
+        int start_y = position.start.y;
+        int stop_x = position.stop.x;
+        int stop_y = position.stop.y;
+
+        assert start_x == stop_x || start_y == stop_y;
+        assert stop_x - start_x + 1 == size || stop_y - start_y + 1 == size;
+
+        if (start_x == stop_x) {
+            for (int y = start_y; y != stop_y + 1; y++) {
+                board[y][start_x] = "O";
+            }
+        } else {
+            for (int x = start_x; x != stop_x + 1; x++) {
+                board[start_y][x] = "O";
+            }
+        }
+    }
+
+    void placeShips() {
+        for (Ship ship : SHIPS) {
+            System.out.printf("Enter the coordinates of the %s (%d cells):", ship.name, ship.size);
+            System.out.println();
+            System.out.println();
+            System.out.print("> ");
+
+            while (true) {
+                try {
+                    placeShip(ship.size);
+                    break;
+                } catch (WrongLengthException e) {
+                    System.out.println();
+                    System.out.printf("Error! Wrong length of the %s! Try again:", ship.name);
+                    System.out.println();
+                } catch (WrongLocationException e) {
+                    System.out.println();
+                    System.out.println("Error! Wrong ship location! Try again:");
+                } catch (TooCloseException e) {
+                    System.out.println();
+                    System.out.println("Error! You placed it too close to another one. Try again:");
+                }
+                System.out.println();
+                System.out.print("> ");
+            }
+            System.out.println();
+            printBoard();
+        }
+    }
 }
 public class Main {
 
     public static void main(String[] args) {
         Game game = new Game();
         game.printBoard();
-        //game.placeShips();
+        game.placeShips();
     }
 }
